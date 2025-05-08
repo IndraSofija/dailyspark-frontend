@@ -1,32 +1,26 @@
-// DailySpark – Frontend starter (Next.js + Tailwind CSS)
-
-import React from 'react';
-import Head from 'next/head';
+import { useState } from 'react';
 
 export default function Home() {
+  const [spark, setSpark] = useState('');
+
+  const generateSpark = async () => {
+    const response = await fetch('https://dailysparkclean-production.up.railway.app/generate');
+    const data = await response.json();
+    setSpark(data.spark); // vai "message", ja backend atgriež { message: "..." }
+  };
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-yellow-50 to-pink-100 p-4">
-      <Head>
-        <title>DailySpark ✨</title>
-        <meta name="description" content="Your daily dose of inspiration" />
-      </Head>
-
-      <main className="text-center">
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-6xl mb-4">
-          Welcome to <span className="text-yellow-500">DailySpark</span>
-        </h1>
-        <p className="text-lg text-gray-700 mb-8">
-          Your daily dose of inspirational content, made simple.
-        </p>
-        <button className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-6 rounded-2xl shadow-md transition-all">
-          Generate Your Spark 🔥
-        </button>
-      </main>
-
-      <footer className="mt-12 text-sm text-gray-400">© {new Date().getFullYear()} DailySpark</footer>
+    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+      <h1>Welcome to DailySpark</h1>
+      <p>Your daily dose of inspirational content, made simple.</p>
+      <button onClick={generateSpark} style={{ marginTop: '10px' }}>
+        Generate Your Spark ✨
+      </button>
+      {spark && (
+        <div style={{ marginTop: '20px', padding: '10px', border: '1px solid #ccc' }}>
+          <strong>Your Spark:</strong> {spark}
+        </div>
+      )}
     </div>
   );
 }
-
-// Tailwind CSS is expected to be configured in tailwind.config.js
-// with default setup (postcss & autoprefixer).
