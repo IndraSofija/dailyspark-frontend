@@ -4,8 +4,8 @@ export default function Home() {
   const [spark, setSpark] = useState('');
 
   const generateSpark = async () => {
-    const response = await fetch('https://dailysparkclean-production.up.railway.app/generate');
-    const data = await response.json();
+    const response = await fetch('https://dailysparkclean-production-74eb.up.railway.app/generate');
+ const data = await response.json();
     setSpark(data.spark); // vai "message", ja backend atgriež { message: "..." }
   };
 
