@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getUserId } from '../utils/userId'; // ✅ pievienojam importu
 
 export default function Home() {
   const [spark, setSpark] = useState('');
@@ -10,6 +11,8 @@ export default function Home() {
     setError('');
     setSpark('');
 
+    const userId = getUserId(); // ✅ iegūstam lietotāja ID
+
     try {
       const response = await fetch('https://dailysparkclean-production-74eb.up.railway.app/generate', {
         method: 'POST',
@@ -18,6 +21,7 @@ export default function Home() {
         },
         body: JSON.stringify({
           prompt: "Generate one short inspirational sentence.",
+          user_id: userId, // ✅ pievienots pieprasījumā
         }),
       });
 
