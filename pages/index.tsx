@@ -5,6 +5,8 @@ export default function Home() {
   const [spark, setSpark] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const selectedNiche = 'I know better';
+
 
   const generateSpark = async () => {
     setLoading(true);
