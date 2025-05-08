@@ -19,10 +19,11 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          prompt: "Generate one short inspirational sentence.",
-          user_id: userId, // ✅ pievienots pieprasījumā
-        }),
+       body: JSON.stringify({
+  niche: selectedNiche,
+  user_id: userId,
+}),
+
       });
 
       const data = await response.json();
