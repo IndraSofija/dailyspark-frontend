@@ -80,9 +80,11 @@ export default function Home() {
         {loading ? 'Generating...' : 'Generate Your Spark 🔥'}
       </button>
 
+      {/* 
       <button onClick={handleUpgrade} style={{ marginTop: '10px', padding: '10px 20px', backgroundColor: '#fbbf24', color: '#fff', borderRadius: '6px', border: 'none' }}>
         Jaunināt uz Basic vai Pro 💳
       </button>
+      */}
 
       {spark && (
         <div style={{ marginTop: '30px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
