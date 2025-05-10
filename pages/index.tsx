@@ -69,6 +69,8 @@ export default function Home() {
 
 // ✅ Jauna funkcija dzirksteles saglabāšanai MongoDB
 const saveSpark = async (sparkText: string, userId: string) => {
+  console.log(">>> Saglabāju Spark:", sparkText, "User:", userId);
+
   try {
     await fetch("https://dailysparkclean-production-74eb.up.railway.app/save-spark", {
       method: "POST",
