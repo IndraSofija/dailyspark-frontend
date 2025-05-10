@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { getUserId } from '../utils/userId'; // ✅ pievienojam importu
+import { getUserId } from '../utils/userId'; // ✅ pievienots lietotāja ID imports
 
 export default function Home() {
   const [spark, setSpark] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const selectedNiche = 'I know better';
-
 
   const generateSpark = async () => {
     setLoading(true);
@@ -21,17 +20,17 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-       body: JSON.stringify({
-  niche: selectedNiche,
-  user_id: userId,
-}),
-
+        body: JSON.stringify({
+          niche: selectedNiche,
+          user_id: userId,
+        }),
       });
 
       const data = await response.json();
 
       if (data.result) {
         setSpark(data.result);
+        await saveSpark(data.result, userId); // ✅ saglabājam spark pēc veiksmīgas saņemšanas
       } else if (data.error) {
         setError(data.error);
       } else {
@@ -67,3 +66,19 @@ export default function Home() {
     </div>
   );
 }
+
+// ✅ Jauna funkcija dzirksteles saglabāšanai MongoDB
+const saveSpark = async (sparkText: string, userId: string) => {
+  try {
+    await fetch("https://dailysparkclean-production-74eb.up.railway.app/save-spark", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: userId,
+        spark_text: sparkText,
+      }),
+    });
+  } catch (error) {
+    console.error("Neizdevās saglabāt dzirksteli:", error);
+  }
+};
