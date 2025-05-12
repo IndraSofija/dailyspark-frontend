@@ -1,3 +1,4 @@
+// pages/index.tsx
 import { useEffect, useState } from 'react';
 import { getUserId } from '../utils/userId';
 
@@ -5,23 +6,35 @@ export default function Home() {
   const [spark, setSpark] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [subscriptionLevel, setSubscriptionLevel] = useState('');
+
+  // Šie divi stāvoki nu tiek ielādēti useEffect iekšā
+  const [userLevel, setUserLevel] = useState<'free' | 'basic' | 'pro'>('free');
+  const [subscriptionLevel, setSubscriptionLevel] = useState<'free' | 'basic' | 'pro'>('free');
+
   const selectedNiche = 'I know better';
 
   useEffect(() => {
-    const fetchSubscriptionLevel = async () => {
+    // async funkcija, kas vienā izsaukumā ielādē userLevel un subscriptionLevel
+    const init = async () => {
+      // 1) userLevel no localStorage
+      const stored = (localStorage.getItem('subscription_level') as 'free' | 'basic' | 'pro') || 'free';
+      setUserLevel(stored);
+
+      // 2) subscriptionLevel no backend
       const userId = getUserId();
       try {
-        const response = await fetch(`https://dailysparkclean-production-74eb.up.railway.app/user-info?user_id=${userId}`);
-        const data = await response.json();
-        setSubscriptionLevel(data.subscription_level || 'free');
-      } catch (err) {
-        console.error('Neizdevās ielādēt subscription level:', err);
+        const resp = await fetch(
+          `https://dailysparkclean-production-74eb.up.railway.app/user-info?user_id=${userId}`
+        );
+        const data = await resp.json();
+        setSubscriptionLevel((data.subscription_level as any) || 'free');
+      } catch (e) {
+        console.error('Neizdevās ielādēt subscription level:', e);
         setSubscriptionLevel('free');
       }
     };
 
-    fetchSubscriptionLevel();
+    init();
   }, []);
 
   const generateSpark = async () => {
@@ -30,21 +43,16 @@ export default function Home() {
     setSpark('');
 
     const userId = getUserId();
-
     try {
-      const response = await fetch('https://dailysparkclean-production-74eb.up.railway.app/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          niche: selectedNiche,
-          user_id: userId,
-        }),
-      });
-
-      const data = await response.json();
-
+      const resp = await fetch(
+        'https://dailysparkclean-production-74eb.up.railway.app/generate',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ niche: selectedNiche, user_id: userId }),
+        }
+      );
+      const data = await resp.json();
       if (data.result) {
         setSpark(data.result);
         await saveSpark(data.result, userId);
@@ -53,38 +61,35 @@ export default function Home() {
       } else {
         setError('Unknown response format.');
       }
-    } catch (err) {
+    } catch {
       setError('Connection failed. Try again later.');
     }
 
     setLoading(false);
   };
 
-  const handleUpgrade = async () => {
+  // tagad pieņem plan tipu
+  const handleUpgrade = async (plan: 'basic' | 'pro') => {
     const userId = getUserId();
-
     try {
-      const response = await fetch("https://dailysparkclean-production-74eb.up.railway.app/create-checkout-session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ user_id: userId }),
-      });
-
-      if (!response.ok) throw new Error("Neizdevās izveidot Stripe sesiju");
-
-      const data = await response.json();
-      const checkoutUrl = data.checkout_url;
-
-      if (checkoutUrl) {
-        window.location.href = checkoutUrl;
+      const resp = await fetch(
+        'https://dailysparkclean-production-74eb.up.railway.app/create-checkout-session',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, plan }),
+        }
+      );
+      if (!resp.ok) throw new Error('Neizdevās izveidot Stripe sesiju');
+      const data = await resp.json();
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
       } else {
-        alert("Checkout URL nav atrasts.");
+        alert('Checkout URL nav atrasts.');
       }
-    } catch (error) {
-      console.error("Kļūda:", error);
-      alert("Neizdevās izveidot maksājuma sesiju.");
+    } catch (e) {
+      console.error('Kļūda:', e);
+      alert('Neizdevās izveidot maksājuma sesiju.');
     }
   };
 
@@ -93,19 +98,70 @@ export default function Home() {
       <h1>Welcome to DailySpark ✨</h1>
       <p>Your daily dose of inspiration, one click away.</p>
 
-      <button onClick={generateSpark} style={{ marginTop: '20px' }} disabled={loading}>
+      {/* Ģenerē dzirksteli */}
+      <button
+        onClick={generateSpark}
+        style={{ marginTop: '20px' }}
+        disabled={loading}
+      >
         {loading ? 'Generating...' : 'Generate Your Spark 🔥'}
       </button>
 
-      {/* 
-      <button onClick={handleUpgrade} style={{ marginTop: '10px', padding: '10px 20px', backgroundColor: '#fbbf24', color: '#fff', borderRadius: '6px', border: 'none' }}>
-        Jaunināt uz Basic vai Pro 💳
-      </button>
-      */}
+      {/* === ŠEIT SĀKAS “Upgrade” pogas === */}
+      {userLevel === 'free' && (
+        <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
+          <button
+            onClick={() => handleUpgrade('basic')}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#fbbf24',
+              color: '#fff',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Jaunināt uz Basic 💳
+          </button>
+          <button
+            onClick={() => handleUpgrade('pro')}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#8b5cf6',
+              color: '#fff',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Jaunināt uz Pro 💳
+          </button>
+        </div>
+      )}
 
+      {userLevel === 'basic' && (
+        <div style={{ marginTop: '15px' }}>
+          <button
+            onClick={() => handleUpgrade('pro')}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#8b5cf6',
+              color: '#fff',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Jaunināt uz Pro 💳
+          </button>
+        </div>
+      )}
+      {/* === ŠEIT BEIDZAS “Upgrade” pogas === */}
+
+      {/* Pro līmeņa arhīvs */}
       {subscriptionLevel === 'pro' && (
         <button
-          onClick={() => window.location.href = '/my-sparks'}
+          onClick={() => (window.location.href = '/my-sparks')}
           style={{
             marginTop: '10px',
             padding: '10px 20px',
@@ -113,22 +169,39 @@ export default function Home() {
             color: 'white',
             border: 'none',
             borderRadius: '5px',
-            cursor: 'pointer'
+            cursor: 'pointer',
           }}
         >
           Skatīt manas dzirksteles 📜
         </button>
       )}
 
+      {/* Rezultāts */}
       {spark && (
-        <div style={{ marginTop: '30px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
+        <div
+          style={{
+            marginTop: '30px',
+            padding: '15px',
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+          }}
+        >
           <strong>Your Spark:</strong>
           <p>{spark}</p>
         </div>
       )}
 
+      {/* Kļūdas logs */}
       {error && (
-        <div style={{ marginTop: '30px', padding: '15px', border: '1px solid red', borderRadius: '8px', color: 'darkred' }}>
+        <div
+          style={{
+            marginTop: '30px',
+            padding: '15px',
+            border: '1px solid red',
+            borderRadius: '8px',
+            color: 'darkred',
+          }}
+        >
           ⚠️ {error}
         </div>
       )}
@@ -136,19 +209,19 @@ export default function Home() {
   );
 }
 
+// Palīgfunkcija dzirksteļu saglabāšanai
 const saveSpark = async (sparkText: string, userId: string) => {
-  console.log(">>> Saglabāju Spark:", sparkText, "User:", userId);
-
+  console.log('>>> Saglabāju Spark:', sparkText, 'User:', userId);
   try {
-    await fetch("https://dailysparkclean-production-74eb.up.railway.app/save-spark", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: userId,
-        spark_text: sparkText,
-      }),
-    });
-  } catch (error) {
-    console.error("Neizdevās saglabāt dzirksteli:", error);
+    await fetch(
+      'https://dailysparkclean-production-74eb.up.railway.app/save-spark',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, spark_text: sparkText }),
+      }
+    );
+  } catch (e) {
+    console.error('Neizdevās saglabāt dzirksteli:', e);
   }
 };
