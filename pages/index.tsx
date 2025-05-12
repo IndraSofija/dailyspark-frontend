@@ -1,11 +1,28 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getUserId } from '../utils/userId';
 
 export default function Home() {
   const [spark, setSpark] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [subscriptionLevel, setSubscriptionLevel] = useState('');
   const selectedNiche = 'I know better';
+
+  useEffect(() => {
+    const fetchSubscriptionLevel = async () => {
+      const userId = getUserId();
+      try {
+        const response = await fetch(`https://dailysparkclean-production-74eb.up.railway.app/user-info?user_id=${userId}`);
+        const data = await response.json();
+        setSubscriptionLevel(data.subscription_level || 'free');
+      } catch (err) {
+        console.error('Neizdevās ielādēt subscription level:', err);
+        setSubscriptionLevel('free');
+      }
+    };
+
+    fetchSubscriptionLevel();
+  }, []);
 
   const generateSpark = async () => {
     setLoading(true);
@@ -85,6 +102,23 @@ export default function Home() {
         Jaunināt uz Basic vai Pro 💳
       </button>
       */}
+
+      {subscriptionLevel === 'pro' && (
+        <button
+          onClick={() => window.location.href = '/my-sparks'}
+          style={{
+            marginTop: '10px',
+            padding: '10px 20px',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}
+        >
+          Skatīt manas dzirksteles 📜
+        </button>
+      )}
 
       {spark && (
         <div style={{ marginTop: '30px', padding: '15px', border: '1px solid #ddd', borderRadius: '8px' }}>
