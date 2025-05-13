@@ -1,4 +1,3 @@
-// pages/index.tsx
 import { useEffect, useState } from 'react';
 import { getUserId } from '../utils/userId';
 
@@ -6,28 +5,34 @@ export default function Home() {
   const [spark, setSpark] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Šie divi stāvoki nu tiek ielādēti useEffect iekšā
   const [userLevel, setUserLevel] = useState<'free' | 'basic' | 'pro'>('free');
   const [subscriptionLevel, setSubscriptionLevel] = useState<'free' | 'basic' | 'pro'>('free');
+  const [savedSparks, setSavedSparks] = useState<{ text: string; timestamp: string }[]>([]);
 
   const selectedNiche = 'I know better';
+  const userId = getUserId();
 
   useEffect(() => {
-    // async funkcija, kas vienā izsaukumā ielādē userLevel un subscriptionLevel
     const init = async () => {
-      // 1) userLevel no localStorage
       const stored = (localStorage.getItem('subscription_level') as 'free' | 'basic' | 'pro') || 'free';
       setUserLevel(stored);
 
-      // 2) subscriptionLevel no backend
-      const userId = getUserId();
       try {
         const resp = await fetch(
           `https://dailysparkclean-production-74eb.up.railway.app/user-info?user_id=${userId}`
         );
         const data = await resp.json();
-        setSubscriptionLevel((data.subscription_level as any) || 'free');
+        const level = (data.subscription_level as any) || 'free';
+        setSubscriptionLevel(level);
+
+        // Ja Pro – ielādē dzirksteles
+        if (level === 'pro') {
+          const sparksRes = await fetch(
+            `https://dailysparkclean-production-74eb.up.railway.app/get-saved-sparks?user_id=${userId}`
+          );
+          const sparksData = await sparksRes.json();
+          setSavedSparks(sparksData.sparks || []);
+        }
       } catch (e) {
         console.error('Neizdevās ielādēt subscription level:', e);
         setSubscriptionLevel('free');
@@ -42,7 +47,6 @@ export default function Home() {
     setError('');
     setSpark('');
 
-    const userId = getUserId();
     try {
       const resp = await fetch(
         'https://dailysparkclean-production-74eb.up.railway.app/generate',
@@ -68,9 +72,7 @@ export default function Home() {
     setLoading(false);
   };
 
-  // tagad pieņem plan tipu
   const handleUpgrade = async (plan: 'basic' | 'pro') => {
-    const userId = getUserId();
     try {
       const resp = await fetch(
         'https://dailysparkclean-production-74eb.up.railway.app/create-checkout-session',
@@ -98,7 +100,6 @@ export default function Home() {
       <h1>Welcome to DailySpark ✨</h1>
       <p>Your daily dose of inspiration, one click away.</p>
 
-      {/* Ģenerē dzirksteli */}
       <button
         onClick={generateSpark}
         style={{ marginTop: '20px' }}
@@ -107,7 +108,7 @@ export default function Home() {
         {loading ? 'Generating...' : 'Generate Your Spark 🔥'}
       </button>
 
-      {/* === ŠEIT SĀKAS “Upgrade” pogas === */}
+      {/* === Upgrade pogas === */}
       {userLevel === 'free' && (
         <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
           <button
@@ -156,24 +157,19 @@ export default function Home() {
           </button>
         </div>
       )}
-      {/* === ŠEIT BEIDZAS “Upgrade” pogas === */}
 
-      {/* Pro līmeņa arhīvs */}
-      {subscriptionLevel === 'pro' && (
-        <button
-          onClick={() => (window.location.href = '/my-sparks')}
-          style={{
-            marginTop: '10px',
-            padding: '10px 20px',
-            backgroundColor: '#4CAF50',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: 'pointer',
-          }}
-        >
-          Skatīt manas dzirksteles 📜
-        </button>
+      {/* === Pro dzirksteļu arhīvs === */}
+      {subscriptionLevel === 'pro' && savedSparks.length > 0 && (
+        <div style={{ marginTop: '30px' }}>
+          <h2>Tavas dzirksteles 📜</h2>
+          <ul>
+            {savedSparks.map((spark, index) => (
+              <li key={index} style={{ marginBottom: '8px' }}>
+                <strong>{new Date(spark.timestamp).toLocaleString()}:</strong> {spark.text}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {/* Rezultāts */}
@@ -191,7 +187,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Kļūdas logs */}
+      {/* Kļūdas ziņojums */}
       {error && (
         <div
           style={{
@@ -209,7 +205,7 @@ export default function Home() {
   );
 }
 
-// Palīgfunkcija dzirksteļu saglabāšanai
+// ✅ Palīgfunkcija dzirksteles saglabāšanai
 const saveSpark = async (sparkText: string, userId: string) => {
   console.log('>>> Saglabāju Spark:', sparkText, 'User:', userId);
   try {
