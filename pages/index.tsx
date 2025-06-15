@@ -8,11 +8,27 @@ export default function Home() {
   const [error, setError] = useState('');
   const [userLevel, setUserLevel] = useState<'free' | 'basic' | 'pro'>('free');
   const [subscriptionLevel, setSubscriptionLevel] = useState<'free' | 'basic' | 'pro'>('free');
+  const [header, setHeader] = useState('');
 
   const selectedNiche = 'I know better';
   const userId = getUserId();
 
   useEffect(() => {
+    const sparkHeaders = [
+      "Here’s your spark for today.",
+      "Take a breath. This one’s for you.",
+      "Today’s spark – quiet but powerful.",
+      "Let this spark find you.",
+      "A little something to nudge your day.",
+      "Not loud. Just true.",
+      "One thought. One flame.",
+      "It’s waiting. Let it land.",
+      "A spark, not a shout.",
+      "This one chose you."
+    ];
+    const random = Math.floor(Math.random() * sparkHeaders.length);
+    setHeader(sparkHeaders[random]);
+
     const init = async () => {
       const stored = (localStorage.getItem('subscription_level') as 'free' | 'basic' | 'pro') || 'free';
       setUserLevel(stored);
@@ -25,7 +41,7 @@ export default function Home() {
         const level = (data.subscription_level as any) || 'free';
         setSubscriptionLevel(level);
       } catch (e) {
-        console.error('Neizdevās ielādēt subscription level:', e);
+        console.error('Failed to load subscription level:', e);
         setSubscriptionLevel('free');
       }
     };
@@ -73,16 +89,16 @@ export default function Home() {
           body: JSON.stringify({ user_id: userId, plan }),
         }
       );
-      if (!resp.ok) throw new Error('Neizdevās izveidot Stripe sesiju');
+      if (!resp.ok) throw new Error('Failed to create Stripe session');
       const data = await resp.json();
       if (data.checkout_url) {
         window.location.href = data.checkout_url;
       } else {
-        alert('Checkout URL nav atrasts.');
+        alert('Checkout URL not found.');
       }
     } catch (e) {
-      console.error('Kļūda:', e);
-      alert('Neizdevās izveidot maksājuma sesiju.');
+      console.error('Error:', e);
+      alert('Could not start checkout session.');
     }
   };
 
@@ -91,10 +107,9 @@ export default function Home() {
       <h1>Welcome to DailySpark ✨</h1>
       <p>Your daily dose of inspiration, one click away.</p>
 
-      {/* ✅ Teksts free lietotājam */}
       {subscriptionLevel === 'free' && (
         <p style={{ marginTop: '10px', color: 'green', fontWeight: 'bold' }}>
-          🟢 Tava šodienas dzirkstele ir no nišas: <em>I know better</em>
+          🟢 You’re receiving a daily spark from a random niche.
         </p>
       )}
 
@@ -106,11 +121,106 @@ export default function Home() {
         {loading ? 'Generating...' : 'Generate Your Spark 🔥'}
       </button>
 
-      {/* === Upgrade pogas === */}
+      {spark && (
+        <div style={{ marginTop: '30px' }}>
+          <h2>{header}</h2>
+          <div
+            style={{
+              marginTop: '10px',
+              padding: '15px',
+              border: '1px solid #ddd',
+              borderRadius: '8px',
+            }}
+          >
+            <p>{spark}</p>
+          </div>
+        </div>
+      )}
+
       {userLevel === 'free' && (
         <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
           <button
             onClick={() => handleUpgrade('basic')}
             style={{
               padding: '10px 20px',
-              backgr
+              backgroundColor: '#fbbf24',
+              color: '#fff',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Upgrade to Basic 💳
+          </button>
+          <button
+            onClick={() => handleUpgrade('pro')}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#8b5cf6',
+              color: '#fff',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Upgrade to Pro 💳
+          </button>
+        </div>
+      )}
+
+      {userLevel === 'basic' && (
+        <div style={{ marginTop: '15px' }}>
+          <button
+            onClick={() => handleUpgrade('pro')}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#8b5cf6',
+              color: '#fff',
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            Upgrade to Pro 💳
+          </button>
+        </div>
+      )}
+
+      {subscriptionLevel === 'pro' && (
+        <div style={{ marginTop: '30px' }}>
+          <SparkHistory userId={userId} />
+        </div>
+      )}
+
+      {error && (
+        <div
+          style={{
+            marginTop: '30px',
+            padding: '15px',
+            border: '1px solid red',
+            borderRadius: '8px',
+            color: 'darkred',
+          }}
+        >
+          ⚠️ {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const saveSpark = async (sparkText: string, userId: string) => {
+  console.log('>>> Saving spark:', sparkText, 'User:', userId);
+  try {
+    await fetch(
+      'https://dailysparkclean-production-74eb.up.railway.app/save-spark',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, spark_text: sparkText }),
+      }
+    );
+  } catch (e) {
+    console.error('Failed to save spark:', e);
+  }
+};
