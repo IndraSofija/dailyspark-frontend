@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getUserId } from '../utils/userId';
+import SparkHistory from '../components/SparkHistory';
 
 export default function Home() {
   const [spark, setSpark] = useState('');
@@ -7,7 +8,6 @@ export default function Home() {
   const [error, setError] = useState('');
   const [userLevel, setUserLevel] = useState<'free' | 'basic' | 'pro'>('free');
   const [subscriptionLevel, setSubscriptionLevel] = useState<'free' | 'basic' | 'pro'>('free');
-  const [savedSparks, setSavedSparks] = useState<{ text: string; timestamp: string }[]>([]);
 
   const selectedNiche = 'I know better';
   const userId = getUserId();
@@ -24,14 +24,6 @@ export default function Home() {
         const data = await resp.json();
         const level = (data.subscription_level as any) || 'free';
         setSubscriptionLevel(level);
-
-        if (level === 'pro') {
-          const sparksRes = await fetch(
-            `https://dailysparkclean-production-74eb.up.railway.app/get-saved-sparks?user_id=${userId}`
-          );
-          const sparksData = await sparksRes.json();
-          setSavedSparks(sparksData.sparks || []);
-        }
       } catch (e) {
         console.error('Neizdevās ielādēt subscription level:', e);
         setSubscriptionLevel('free');
@@ -121,109 +113,4 @@ export default function Home() {
             onClick={() => handleUpgrade('basic')}
             style={{
               padding: '10px 20px',
-              backgroundColor: '#fbbf24',
-              color: '#fff',
-              borderRadius: '6px',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            Jaunināt uz Basic 💳
-          </button>
-          <button
-            onClick={() => handleUpgrade('pro')}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#8b5cf6',
-              color: '#fff',
-              borderRadius: '6px',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            Jaunināt uz Pro 💳
-          </button>
-        </div>
-      )}
-
-      {userLevel === 'basic' && (
-        <div style={{ marginTop: '15px' }}>
-          <button
-            onClick={() => handleUpgrade('pro')}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#8b5cf6',
-              color: '#fff',
-              borderRadius: '6px',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            Jaunināt uz Pro 💳
-          </button>
-        </div>
-      )}
-
-      {/* === Pro dzirksteļu arhīvs === */}
-      {subscriptionLevel === 'pro' && savedSparks.length > 0 && (
-        <div style={{ marginTop: '30px' }}>
-          <h2>Tavas dzirksteles 📜</h2>
-          <ul>
-            {savedSparks.map((spark, index) => (
-              <li key={index} style={{ marginBottom: '8px' }}>
-                <strong>{new Date(spark.timestamp).toLocaleString()}:</strong> {spark.text}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Rezultāts */}
-      {spark && (
-        <div
-          style={{
-            marginTop: '30px',
-            padding: '15px',
-            border: '1px solid #ddd',
-            borderRadius: '8px',
-          }}
-        >
-          <strong>Your Spark:</strong>
-          <p>{spark}</p>
-        </div>
-      )}
-
-      {/* Kļūdas ziņojums */}
-      {error && (
-        <div
-          style={{
-            marginTop: '30px',
-            padding: '15px',
-            border: '1px solid red',
-            borderRadius: '8px',
-            color: 'darkred',
-          }}
-        >
-          ⚠️ {error}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ✅ Palīgfunkcija dzirksteles saglabāšanai
-const saveSpark = async (sparkText: string, userId: string) => {
-  console.log('>>> Saglabāju Spark:', sparkText, 'User:', userId);
-  try {
-    await fetch(
-      'https://dailysparkclean-production-74eb.up.railway.app/save-spark',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, spark_text: sparkText }),
-      }
-    );
-  } catch (e) {
-    console.error('Neizdevās saglabāt dzirksteli:', e);
-  }
-};
+              backgr
