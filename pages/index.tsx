@@ -25,7 +25,6 @@ export default function Home() {
         const level = (data.subscription_level as any) || 'free';
         setSubscriptionLevel(level);
 
-        // Ja Pro – ielādē dzirksteles
         if (level === 'pro') {
           const sparksRes = await fetch(
             `https://dailysparkclean-production-74eb.up.railway.app/get-saved-sparks?user_id=${userId}`
@@ -99,6 +98,13 @@ export default function Home() {
     <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
       <h1>Welcome to DailySpark ✨</h1>
       <p>Your daily dose of inspiration, one click away.</p>
+
+      {/* ✅ Teksts free lietotājam */}
+      {subscriptionLevel === 'free' && (
+        <p style={{ marginTop: '10px', color: 'green', fontWeight: 'bold' }}>
+          🟢 Tava šodienas dzirkstele ir no nišas: <em>I know better</em>
+        </p>
+      )}
 
       <button
         onClick={generateSpark}
